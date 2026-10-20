@@ -1,0 +1,115 @@
+# Export Improvement Tasks
+
+- [x] Audit the PNG and PDF rendering pipelines for cropped circle/group boundaries and loss of detail.
+- [x] Calculate safe export bounds from visible character boxes, expanded circle-group outlines, and connector extents.
+- [x] Make PNG export use the safe bounds and retain crisp high-resolution drawing.
+- [x] Make PDF export consistently landscape with explicit print-safe margins and fit-to-page scaling.
+- [x] Generate representative export-bound fixtures and validate the production build and live interface.
+- [x] Audit PDF preview rendering and export dialogs for suitable zoom and selection controls.
+- [x] Add a PDF preview zoom control with readable print-scale presets.
+- [x] Add fit-selection controls for the focused character cluster and individual circle groups.
+- [x] Validate selection exports through TypeScript, production build, and safe-bound regression coverage.
+- [x] Audit existing hub, standard-relationship, and node-face attachment behavior.
+- [x] Add a converging multi-source relationship mode for shared parent/child-type relationships.
+- [x] Render and export converging relationships in canvas, PNG, and PDF outputs.
+- [x] Distribute dense connectors across dynamic node ports so lines do not merge at one face midpoint.
+- [x] Validate relationship layout behavior through type checks, production build, and rendered map review.
+- [x] Audit the current relationship dialog, overlays, node ports, and layout controls for family-unit integration.
+- [x] Add a partner-first family-unit relationship mode with one shared child branch.
+- [x] Render and export family-unit connectors consistently.
+- [x] Add an optional visible routing-port display for densely connected character nodes.
+- [x] Add a parent/child family-tree auto-arrange action with clear generation spacing.
+- [x] Validate the family mapping additions through TypeScript, production build, and rendered map review.
+- [x] Audit the family-tree layout, family-unit editing flow, and connector drawing pipeline.
+- [x] Add a preview-and-apply workflow for family-tree layout plus one-step undo restoration.
+- [x] Add manual sibling ordering controls for each family-unit connector.
+- [x] Add distinct adoption and step-parent line conventions on canvas and in exports.
+- [x] Validate the new family workflow through TypeScript, production build, and rendered-map review.
+- [x] Audit current per-book persistence, layout controls, and Family Unit editing paths.
+- [x] Add persisted named layout variants with create, switch, rename, and delete controls.
+- [x] Add a dedicated Family Unit context panel for relationship dates, guardianship, and notes.
+- [x] Validate saved-layout switching and family context persistence through TypeScript, production build, and rendered-book view.
+- [x] Audit the layout-variant manager and Family Unit overlay for thumbnail and hover interaction integration.
+- [x] Add visual mini-map thumbnails for saved layout variants.
+- [x] Add duplicate layout and save-as controls to create layout variations quickly.
+- [x] Add a Family Unit connector hover card displaying context details.
+- [x] Validate the layout-manager and hover-card improvements through TypeScript, production build, and rendered-map review.
+- [x] Audit current PDF, PNG, and canvas relationship path builders and target-face arrow orientation.
+- [x] Preserve curved, straight, and orthogonal line styles in PDF relationship rendering.
+- [x] Align standard relationship arrowheads perpendicular to the attached target face on all four box sides.
+- [x] Validate canvas routing and PDF renderer integration through TypeScript, production build, and rendered-map review.
+- [x] Audit custom hub, group, converging, and family connector target geometry plus current routing-port state.
+- [x] Apply perpendicular target-face arrow approaches to hub-and-spoke and character-to-group connectors.
+- [x] Add a persisted global arrowhead-size setting and control.
+- [x] Add a routing-debug overlay that labels occupied node ports.
+- [x] Validate custom connector and routing-debug behaviour through TypeScript, production build, and rendered-map review.
+- [x] Audit marker sizing, main-canvas control placement, and standard relationship route geometry.
+- [x] Add persisted arrowhead-size overrides for individual relationship types.
+- [x] Add a quick canvas button for routing-debug visibility.
+- [x] Add obstacle-aware perpendicular rerouting for standard relationship paths.
+- [x] Validate routing and marker controls through TypeScript, production build, and rendered-map review.
+- [x] Audit standard relationship persistence, edge path rendering, and occupied port allocation.
+- [x] Add persisted draggable manual waypoints and a reset-to-automatic action.
+- [x] Highlight a relationship when its occupied routing-debug port is hovered.
+- [x] Validate interactive routing controls through TypeScript, production build, and rendered-map review.
+- [x] Audit standard and custom waypoint data plus export path rendering.
+- [x] Add waypoint deletion, snap-to-grid, and PDF-preserved standard manual routes.
+- [x] Add persisted manual waypoint routing controls for hub-and-spoke connectors.
+- [x] Add persisted manual waypoint routing controls for character-to-group connectors.
+- [x] Validate all manual routing controls through TypeScript, production build, and rendered-map review.
+- [x] Audit group membership, existing focus behaviour, and current map-view composition.
+- [x] Add an ordered Group Sequence view with one focused map per group.
+- [x] Repeat shared characters in every applicable group sequence section and provide clear sequence navigation.
+- [x] Add group-order controls and a clear return path to the full map.
+- [x] Validate the Group Sequence workflow through TypeScript, production build, and rendered-map review.
+- [x] Audit Group Sequence geometry and book persistence for group boundaries and annotations.
+- [x] Render a labelled group boundary in each Group Sequence focused map.
+- [x] Add persisted free-floating and character-linked text boxes to the main canvas.
+- [x] Validate outlines and annotation interactions through TypeScript, production build, and rendered-map review.
+- [x] Inspect and repair the free-floating annotation drag target without compromising inline editing.
+- [x] Validate the annotation drag bar through TypeScript and rendered-canvas review.
+- [x] Audit annotation data, interaction controls, and PNG/PDF export geometry.
+- [x] Simplify annotation headers and add persisted colour, size, and movement-lock presets.
+- [x] Render free-floating and linked annotations in PNG and PDF exports.
+- [x] Validate annotation controls and exported output through TypeScript, production build, and rendered-map review.
+- [x] Audit annotation rendering, sidebar integration, and PNG/PDF export controls.
+- [x] Add a searchable annotation panel with edit and canvas-navigation actions.
+- [x] Add annotation visibility switches to PNG and PDF export flows.
+- [x] Add rich-text formatting and timeline, quotation, and chapter-heading templates.
+- [x] Validate annotation management, formatting, and export toggles through TypeScript, production build, and rendered-map review.
+- [x] Audit sidebar height constraints, scroll containers, tab bar stacking, and icon overflow.
+- [x] Add reliable sidebar content scrolling and sufficient responsive width for hover actions.
+- [x] Keep sidebar tabs above content and ensure every tab remains selectable.
+- [x] Validate sidebar navigation and controls through TypeScript and rendered-map review.
+- [x] Audit annotation templates, persistence, and note-navigation controls for research metadata.
+- [x] Add persisted timeline dates, tag collections, and structured source citations to notes.
+- [x] Build a dedicated chronological Timeline view with navigation back to canvas annotations.
+- [x] Add tag filters and research-source editors to the Notes panel.
+- [x] Validate the research-note workflow through TypeScript, production build, and rendered-map review.
+- [x] Audit annotation template metadata, canvas filtering, and existing research notebook views.
+- [x] Add persisted annotation layers and Reading, Study, and Research visibility presets.
+- [x] Build distinct Timeline and Quotes notebook pages while keeping the main map uncluttered by default.
+- [x] Add explicit Pin to map controls for timeline and quotation notes.
+- [x] Validate layer presets, notebook pages, and pinning through TypeScript, production build, and rendered-map review.
+- [x] Audit annotation leader geometry plus Timeline, Chapter, and Quote notebook state.
+- [x] Attach linked note leaders to the nearest appropriate character-box side.
+- [x] Add named chronological groups and sequential navigation to Timeline notes.
+- [x] Add a chapter-by-chapter reader page for Chapter notes.
+- [x] Add individual quotation-note visibility selection for the canvas.
+- [x] Validate the decluttered annotation workflow through TypeScript, production build, and rendered-map review.
+- [x] Audit Family Unit filtering in Group Sequence and disabled PDF export-scope controls.
+- [x] Render Family Unit branches when all of their participants are in the active Group Sequence map.
+- [x] Enable Focus and Group selection PDF export scopes whenever characters or groups exist.
+- [x] Validate Group Sequence relationship rendering and export scope selection through TypeScript, production build, and rendered-map review.
+- [x] Audit annotation layer visibility and current PDF composition/pagination helpers.
+- [x] Restore Chapter-note visibility when the relevant notebook layer is selected or a note is pinned.
+- [x] Add paginated PDF sections for character notes, chapters, timeline entries, and quotations.
+- [x] Validate the complete PDF reading packet and canvas note visibility through TypeScript, production build, and rendered-map review.
+- [x] Audit PDF preview options and packet section generation.
+- [x] Add independent include/exclude controls for map, characters, chapters, timeline, quotes, and bibliography.
+- [x] Generate a deduplicated bibliography from annotation citations at the end of selected packets.
+- [x] Validate configurable PDF packets through TypeScript, production build, and rendered-map review.
+- [x] Audit PDF packet state and bibliography formatting helpers.
+- [x] Add Reading, Study, and Research packet presets to the PDF export controls.
+- [x] Add citation-style selection and bibliography formatting for compact, MLA, and Chicago modes.
+- [x] Validate PDF presets and bibliography formatting through TypeScript, production build, and rendered-map review.
