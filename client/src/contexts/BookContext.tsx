@@ -529,6 +529,26 @@ export function BookProvider({ children }: { children: React.ReactNode }) {
     return () => { if (saveTimer.current) clearTimeout(saveTimer.current); };
   }, [book]);
 
+  // Phones often suspend a page before the debounced save runs, so save
+  // immediately whenever the app is hidden or closed.
+  const latestBook = useRef(book);
+  latestBook.current = book;
+  useEffect(() => {
+    const flush = () => {
+      const current = latestBook.current;
+      if (current.title || current.characters.length > 0) {
+        try { saveToStorage(current); } catch { /* storage unavailable */ }
+      }
+    };
+    const onVisibility = () => { if (document.visibilityState === 'hidden') flush(); };
+    window.addEventListener('pagehide', flush);
+    document.addEventListener('visibilitychange', onVisibility);
+    return () => {
+      window.removeEventListener('pagehide', flush);
+      document.removeEventListener('visibilitychange', onVisibility);
+    };
+  }, []);
+
   const mutate = useCallback((updater: (b: BookData) => BookData) => {
     setBook(prev => updater({ ...prev, updatedAt: new Date().toISOString() }));
   }, []);
@@ -673,7 +693,11 @@ export function BookProvider({ children }: { children: React.ReactNode }) {
   }, [mutate, selectedCharacterId]);
 
   const moveCharacter = useCallback((id: string, x: number, y: number) => {
-    mutate(b => ({ ...b, characters: b.characters.map(c => c.id === id ? { ...c, x, y } : c) }));
+    mutate(b => ({ ...b, characters: b.characters.map(c => {
+      if (c.id !== id) return c;
+      const { placedAutomatically: _placed, ...rest } = c;
+      return { ...rest, x, y };
+    }) }));
   }, [mutate]);
 
   // Relationships

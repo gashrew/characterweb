@@ -8,14 +8,22 @@ import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import { BookProvider } from "./contexts/BookContext";
 import Home from "./pages/Home";
+import { QuickView } from "./components/QuickView";
+import { useState } from "react";
+
+import { initialViewMode, setViewMode, type ViewMode } from "./lib/viewMode";
 
 function App() {
+  const [mode] = useState<ViewMode>(initialViewMode);
   return (
     <ErrorBoundary>
       <ThemeProvider defaultTheme="dark">
         <BookProvider>
           <TooltipProvider>
             <Toaster
+              position={mode === "quick" ? "top-center" : "bottom-right"}
+              duration={mode === "quick" ? 2200 : undefined}
+              offset={mode === "quick" ? 12 : undefined}
               toastOptions={{
                 style: {
                   background: '#1a2035',
@@ -24,7 +32,7 @@ function App() {
                 },
               }}
             />
-            <Home />
+            {mode === "quick" ? <QuickView onSwitchToFull={() => setViewMode("full")} /> : <Home />}
           </TooltipProvider>
         </BookProvider>
       </ThemeProvider>

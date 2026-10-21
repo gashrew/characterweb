@@ -30,6 +30,8 @@ export interface Character {
   // Canvas position
   x: number;
   y: number;
+  /** Set when added from the phone quick-add view; cleared once moved on the map. */
+  placedAutomatically?: boolean;
 }
 
 export type RelationshipLineStyle = 'orthogonal' | 'curved' | 'straight';

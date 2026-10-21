@@ -14,8 +14,9 @@ import {
   BookOpen, Users, GitBranch, Layers, Plus, Pencil, Trash2,
   ChevronLeft, ChevronRight, ChevronUp, ChevronDown, Download, Upload, FilePlus, GitMerge, Tag,
   Eye, EyeOff, Crosshair, Circle,
-  StickyNote,
+  StickyNote, Smartphone,
 } from 'lucide-react';
+import { setViewMode } from '@/lib/viewMode';
 import { Switch } from '@/components/ui/switch';
 import { Slider } from '@/components/ui/slider';
 import { CircleOrderPanel } from '@/components/CircleOrderPanel';
@@ -276,6 +277,15 @@ export function Sidebar({
                   onClick={handleImport}
                 >
                   <Upload size={13} /> Import JSON
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="w-full justify-start gap-2"
+                  style={{ background: '#1a2035', border: '1px solid #2a3350', color: '#e8e0d0', fontSize: 12 }}
+                  onClick={() => setViewMode('quick')}
+                >
+                  <Smartphone size={13} /> Quick-add view (phone layout)
                 </Button>
                 <Button
                   variant="outline"
