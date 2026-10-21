@@ -10,7 +10,8 @@ import {
   Plus, Search, Trash2, Upload, Users, Waypoints, X,
 } from 'lucide-react';
 import { useBook } from '@/contexts/BookContext';
-import { calcNodeWidth } from '@/components/CharacterNode';
+import { useBookImport } from '@/components/BookImport';
+import { nextQuickPosition } from '@/lib/placement';
 import {
   GROUP_COLORS, RELATIONSHIP_TYPES,
   type BookData, type Character, type CharacterGender, type Group, type Relationship, type RelationshipType,
@@ -57,22 +58,6 @@ type Sheet =
   | { kind: 'relationship'; id?: string; sourceId?: string; targetId?: string }
   | { kind: 'group'; id?: string }
   | null;
-
-/** Where a phone-added character should sit on the map: a tidy column to the right. */
-function nextQuickPosition(chars: Character[]): { x: number; y: number } {
-  const staged = chars.filter(c => c.placedAutomatically);
-  if (staged.length > 0) {
-    const last = staged[staged.length - 1];
-    const columnTop = Math.min(...staged.map(c => c.y));
-    const inColumn = staged.filter(c => Math.abs(c.x - last.x) < 1);
-    if (inColumn.length >= 12) return { x: last.x + 240, y: columnTop };
-    return { x: last.x, y: last.y + 64 };
-  }
-  if (chars.length === 0) return { x: 100, y: 100 };
-  const right = Math.max(...chars.map(c => c.x + calcNodeWidth(c.name)));
-  const top = Math.min(...chars.map(c => c.y));
-  return { x: right + 140, y: top };
-}
 
 function displayName(c?: Character) {
   if (!c) return 'Unknown';
@@ -696,30 +681,10 @@ function GroupsTab({ open }: { open: (s: Sheet) => void }) {
 }
 
 function BookTab({ onSwitchToFull, onDone }: { onSwitchToFull: () => void; onDone: () => void }) {
-  const { book, savedBooks, loadBook, newBook, updateBookMeta, exportBook, importBook } = useBook();
+  const { book, savedBooks, loadBook, newBook, updateBookMeta, exportBook } = useBook();
   const others = [...savedBooks].filter(b => b.id !== book.id).sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
 
-  const handleImport = () => {
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.accept = '.json,application/json';
-    input.onchange = () => {
-      const file = input.files?.[0];
-      if (!file) return;
-      file.text().then(text => {
-        try {
-          const parsed = JSON.parse(text) as Partial<BookData>;
-          if (!Array.isArray(parsed.characters)) throw new Error('not a book');
-          importBook(text);
-          toast.success(`Imported ${parsed.title || 'book'}`);
-          onDone();
-        } catch {
-          toast.error("That file doesn't look like a CharacterWeb book.");
-        }
-      });
-    };
-    input.click();
-  };
+  const { start: handleImport, dialog: importDialog } = useBookImport(onDone);
 
   return (
     <div style={{ padding: 16 }}>
@@ -752,8 +717,9 @@ function BookTab({ onSwitchToFull, onDone }: { onSwitchToFull: () => void; onDon
         <ActionRow icon={<MapIcon size={18} />} onClick={onSwitchToFull}>Open the full map view</ActionRow>
       </div>
       <p style={{ color: C.faint, fontSize: 13, lineHeight: 1.5, marginTop: 18 }}>
-        Books are saved on this device. To arrange new characters on the map, export here and import on your iPad or laptop — characters added on the phone appear in a column to the right of the existing map.
+        Books are saved on this device. To bring additions onto the map, export here and import on your iPad or laptop, choosing <b>Merge</b> — new characters appear in a column to the right of your existing layout.
       </p>
+      {importDialog}
     </div>
   );
 }

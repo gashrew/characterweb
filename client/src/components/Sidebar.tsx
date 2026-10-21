@@ -17,6 +17,7 @@ import {
   StickyNote, Smartphone,
 } from 'lucide-react';
 import { setViewMode } from '@/lib/viewMode';
+import { useBookImport } from '@/components/BookImport';
 import { Switch } from '@/components/ui/switch';
 import { Slider } from '@/components/ui/slider';
 import { CircleOrderPanel } from '@/components/CircleOrderPanel';
@@ -53,7 +54,7 @@ export function Sidebar({
     sidebarTab, setSidebarTab,
     selectedCharacterId, setSelectedCharacterId,
     selectedRelationshipId, setSelectedRelationshipId,
-    exportBook, importBook, newBook, savedBooks, loadBook, deleteBook,
+    exportBook, newBook, savedBooks, loadBook, deleteBook,
     saveLayoutVariant, duplicateLayoutVariant, applyLayoutVariant, renameLayoutVariant, deleteLayoutVariant,
     setIsAddingRelationship,
     showRelationshipLabels, setShowRelationshipLabels,
@@ -86,23 +87,7 @@ export function Sidebar({
   const [renamingLayoutId, setRenamingLayoutId] = useState<string | null>(null);
   const [layoutRenameValue, setLayoutRenameValue] = useState('');
 
-  const handleImport = () => {
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.accept = '.json';
-    input.onchange = (e) => {
-      const file = (e.target as HTMLInputElement).files?.[0];
-      if (!file) return;
-      const reader = new FileReader();
-      reader.onload = (ev) => {
-        const text = ev.target?.result as string;
-        importBook(text);
-        toast.success('Book imported successfully.');
-      };
-      reader.readAsText(file);
-    };
-    input.click();
-  };
+  const { start: handleImport, dialog: importDialog } = useBookImport();
 
   if (collapsed) {
     return (
@@ -1177,6 +1162,7 @@ export function Sidebar({
           {sidebarTab === 'annotations' && <AnnotationPanel />}
         </div>
       </ScrollArea>
+      {importDialog}
     </div>
   );
 }

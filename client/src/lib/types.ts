@@ -17,6 +17,8 @@ export type RelationshipType =
 export type CharacterGender = 'male' | 'female' | 'non-binary' | 'unknown';
 
 export interface Character {
+  /** Last edit time (ISO); used to resolve merges between devices. */
+  updatedAt?: string;
   id: string;
   name: string;
   title?: string;          // e.g. "Lord", "Dr.", "Queen"
@@ -37,6 +39,8 @@ export interface Character {
 export type RelationshipLineStyle = 'orthogonal' | 'curved' | 'straight';
 
 export interface Relationship {
+  /** Last edit time (ISO); used to resolve merges between devices. */
+  updatedAt?: string;
   id: string;
   sourceId: string;
   targetId: string;
@@ -57,6 +61,8 @@ export type EnforcedBoundarySet = Set<string>;
 export type CircleStrokeStyle = 'dashed' | 'solid' | 'dotted';
 
 export interface Group {
+  /** Last edit time (ISO); used to resolve merges between devices. */
+  updatedAt?: string;
   id: string;
   name: string;
   color: string;           // accent colour for the group
@@ -68,6 +74,8 @@ export interface Group {
 
 // Hub-and-spoke: one source → many targets, rendered as a branching line
 export interface HubRelationship {
+  /** Last edit time (ISO); used to resolve merges between devices. */
+  updatedAt?: string;
   id: string;
   sourceId: string;          // the hub character
   targetIds: string[];       // the spoke characters
@@ -81,6 +89,8 @@ export interface HubRelationship {
 // Converging relationship: multiple source characters → one shared target.
 // Intended for relationships such as two parents → one child.
 export interface ConvergingRelationship {
+  /** Last edit time (ISO); used to resolve merges between devices. */
+  updatedAt?: string;
   id: string;
   sourceIds: string[];       // the 2+ people sharing the relationship
   targetId: string;          // the shared target character
@@ -93,6 +103,8 @@ export interface ConvergingRelationship {
 // Family unit: partners are visibly joined first, then one shared branch
 // connects their unit to one or more children.
 export interface FamilyUnitRelationship {
+  /** Last edit time (ISO); used to resolve merges between devices. */
+  updatedAt?: string;
   id: string;
   partnerIds: string[];      // exactly two partners in the current UI
   childIds: string[];        // one or more children
@@ -115,6 +127,8 @@ export interface LayoutVariant {
 
 // Character-to-circle: one character → one circle group boundary
 export interface GroupRelationship {
+  /** Last edit time (ISO); used to resolve merges between devices. */
+  updatedAt?: string;
   id: string;
   sourceId: string;          // the character
   groupId: string;           // the circle group
@@ -127,6 +141,8 @@ export interface GroupRelationship {
 
 /** A movable explanatory note; attach to a character when it should travel with that person. */
 export interface CanvasAnnotation {
+  /** Last edit time (ISO); used to resolve merges between devices. */
+  updatedAt?: string;
   id: string;
   text: string;
   x: number;
@@ -189,6 +205,8 @@ export interface BookData {
   groupSequenceOrder?: string[];
   layoutVariants?: LayoutVariant[];
   activeLayoutVariantId?: string | null;
+  /** IDs of items deleted from this book, so merges can remove them on other devices. */
+  deletedIds?: string[];
   createdAt: string;
   updatedAt: string;
 }

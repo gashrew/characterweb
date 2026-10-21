@@ -7,6 +7,7 @@ import { calcNodeWidth } from '@/components/CharacterNode';
 import type { AnnotationLayer, AnnotationLayerPreset, BookData, Character, Relationship, Group, HubRelationship, ConvergingRelationship, FamilyUnitRelationship, GroupRelationship, CanvasAnnotation } from '@/lib/types';
 import { DEFAULT_BOOK } from '@/lib/types';
 import { SAMPLE_BOOK } from '@/lib/sampleData';
+import { mergeBooks, type MergeSummary } from '@/lib/mergeBooks';
 
 const STORAGE_KEY = 'book-character-mapper-data';
 const STORAGE_INDEX_KEY = 'book-character-mapper-index';
@@ -18,7 +19,7 @@ const STORAGE_ARROWHEAD_SCALE_KEY = 'book-character-mapper-arrowhead-scale';
 const STORAGE_ARROWHEAD_TYPE_SCALES_KEY = 'book-character-mapper-arrowhead-type-scales';
 const STORAGE_ROUTING_DEBUG_KEY = 'book-character-mapper-routing-debug';
 
-interface BookIndex {
+export interface BookIndex {
   id: string;
   title: string;
   author: string;
@@ -36,6 +37,10 @@ interface BookContextValue {
   deleteBook: (id: string) => void;
   exportBook: () => void;
   importBook: (json: string) => void;
+  /** A book on this device that looks like the same book as `incoming` (same ID, else same title). */
+  findMatchingBook: (incoming: BookData) => BookIndex | null;
+  /** Merge an exported book into a book on this device and open it. */
+  mergeIntoBook: (targetId: string, incoming: BookData) => MergeSummary | null;
   // Named character-position variants saved within the current book
   saveLayoutVariant: (name: string) => void;
   duplicateLayoutVariant: (id: string, name?: string) => void;
@@ -179,6 +184,11 @@ function getIndex(): BookIndex[] {
 }
 
 type LayoutPositions = Record<string, { x: number; y: number }>;
+
+/** Remember a deleted item's ID (bounded) so a later merge on another device removes it too. */
+function withTombstone(b: BookData, id: string): string[] {
+  return [...(b.deletedIds ?? []).filter(x => x !== id), id].slice(-2000);
+}
 
 function calculateFamilyTreePositions(book: BookData): LayoutPositions {
   const parentToChildren = new Map<string, Set<string>>();
@@ -616,7 +626,8 @@ export function BookProvider({ children }: { children: React.ReactNode }) {
   const importBook = useCallback((json: string) => {
     try {
       const parsed = migrateBook(JSON.parse(json) as BookData);
-      parsed.id = nanoid();
+      // Keep the book's own ID when it's free, so later merges can recognise it.
+      if (!parsed.id || loadFromStorage(parsed.id)) parsed.id = nanoid();
       parsed.updatedAt = new Date().toISOString();
       setBook(parsed);
       saveToStorage(parsed);
@@ -624,6 +635,32 @@ export function BookProvider({ children }: { children: React.ReactNode }) {
     } catch {
       // ignore parse errors
     }
+  }, []);
+
+  const findMatchingBook = useCallback((incoming: BookData): BookIndex | null => {
+    const index = getIndex();
+    const byId = index.find(entry => entry.id === incoming.id);
+    if (byId) return byId;
+    const norm = (t?: string) => (t ?? '').trim().toLowerCase().replace(/\s+/g, ' ');
+    const title = norm(incoming.title);
+    if (!title) return null;
+    const sameTitle = index.filter(entry => norm(entry.title) === title);
+    sameTitle.sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
+    return sameTitle[0] ?? null;
+  }, []);
+
+  const mergeIntoBook = useCallback((targetId: string, incoming: BookData): MergeSummary | null => {
+    const current = latestBook.current;
+    const local = current.id === targetId ? current : loadFromStorage(targetId);
+    if (!local) return null;
+    const { book: merged, summary } = mergeBooks(migrateBook(local), migrateBook(incoming));
+    merged.id = targetId;
+    saveToStorage(merged);
+    setBook(merged);
+    setSavedBooks(getIndex());
+    setSelectedCharacterId(null);
+    setSelectedRelationshipId(null);
+    return summary;
   }, []);
 
   const saveLayoutVariant = useCallback((name: string) => {
@@ -670,18 +707,19 @@ export function BookProvider({ children }: { children: React.ReactNode }) {
 
   // Characters
   const addCharacter = useCallback((char: Omit<Character, 'id'>): Character => {
-    const newChar: Character = { ...char, id: nanoid() };
+    const newChar: Character = { ...char, id: nanoid(), updatedAt: new Date().toISOString() };
     mutate(b => ({ ...b, characters: [...b.characters, newChar] }));
     return newChar;
   }, [mutate]);
 
   const updateCharacter = useCallback((id: string, updates: Partial<Character>) => {
-    mutate(b => ({ ...b, characters: b.characters.map(c => c.id === id ? { ...c, ...updates } : c) }));
+    mutate(b => ({ ...b, characters: b.characters.map(c => c.id === id ? { ...c, ...updates, updatedAt: new Date().toISOString() } : c) }));
   }, [mutate]);
 
   const deleteCharacter = useCallback((id: string) => {
     mutate(b => ({
       ...b,
+      deletedIds: withTombstone(b, id),
       characters: b.characters.filter(c => c.id !== id),
       relationships: b.relationships.filter(r => r.sourceId !== id && r.targetId !== id),
       hubRelationships: (b.hubRelationships ?? []).filter(r => r.sourceId !== id && !r.targetIds.includes(id)),
@@ -702,109 +740,110 @@ export function BookProvider({ children }: { children: React.ReactNode }) {
 
   // Relationships
   const addRelationship = useCallback((rel: Omit<Relationship, 'id'>): Relationship => {
-    const newRel: Relationship = { ...rel, id: nanoid() };
+    const newRel: Relationship = { ...rel, id: nanoid(), updatedAt: new Date().toISOString() };
     mutate(b => ({ ...b, relationships: [...b.relationships, newRel] }));
     return newRel;
   }, [mutate]);
 
   const updateRelationship = useCallback((id: string, updates: Partial<Relationship>) => {
-    mutate(b => ({ ...b, relationships: b.relationships.map(r => r.id === id ? { ...r, ...updates } : r) }));
+    mutate(b => ({ ...b, relationships: b.relationships.map(r => r.id === id ? { ...r, ...updates, updatedAt: new Date().toISOString() } : r) }));
   }, [mutate]);
 
   const deleteRelationship = useCallback((id: string) => {
-    mutate(b => ({ ...b, relationships: b.relationships.filter(r => r.id !== id) }));
+    mutate(b => ({ ...b, deletedIds: withTombstone(b, id), relationships: b.relationships.filter(r => r.id !== id) }));
     if (selectedRelationshipId === id) setSelectedRelationshipId(null);
   }, [mutate, selectedRelationshipId]);
 
   // Hub relationships
   const addHubRelationship = useCallback((rel: Omit<HubRelationship, 'id'>): HubRelationship => {
-    const newRel: HubRelationship = { ...rel, id: nanoid() };
+    const newRel: HubRelationship = { ...rel, id: nanoid(), updatedAt: new Date().toISOString() };
     mutate(b => ({ ...b, hubRelationships: [...(b.hubRelationships ?? []), newRel] }));
     return newRel;
   }, [mutate]);
 
   const updateHubRelationship = useCallback((id: string, updates: Partial<HubRelationship>) => {
-    mutate(b => ({ ...b, hubRelationships: (b.hubRelationships ?? []).map(r => r.id === id ? { ...r, ...updates } : r) }));
+    mutate(b => ({ ...b, hubRelationships: (b.hubRelationships ?? []).map(r => r.id === id ? { ...r, ...updates, updatedAt: new Date().toISOString() } : r) }));
   }, [mutate]);
 
   const deleteHubRelationship = useCallback((id: string) => {
-    mutate(b => ({ ...b, hubRelationships: (b.hubRelationships ?? []).filter(r => r.id !== id) }));
+    mutate(b => ({ ...b, deletedIds: withTombstone(b, id), hubRelationships: (b.hubRelationships ?? []).filter(r => r.id !== id) }));
   }, [mutate]);
 
   // Converging relationships
   const addConvergingRelationship = useCallback((rel: Omit<ConvergingRelationship, 'id'>): ConvergingRelationship => {
-    const newRel: ConvergingRelationship = { ...rel, id: nanoid() };
+    const newRel: ConvergingRelationship = { ...rel, id: nanoid(), updatedAt: new Date().toISOString() };
     mutate(b => ({ ...b, convergingRelationships: [...(b.convergingRelationships ?? []), newRel] }));
     return newRel;
   }, [mutate]);
 
   const updateConvergingRelationship = useCallback((id: string, updates: Partial<ConvergingRelationship>) => {
-    mutate(b => ({ ...b, convergingRelationships: (b.convergingRelationships ?? []).map(r => r.id === id ? { ...r, ...updates } : r) }));
+    mutate(b => ({ ...b, convergingRelationships: (b.convergingRelationships ?? []).map(r => r.id === id ? { ...r, ...updates, updatedAt: new Date().toISOString() } : r) }));
   }, [mutate]);
 
   const deleteConvergingRelationship = useCallback((id: string) => {
-    mutate(b => ({ ...b, convergingRelationships: (b.convergingRelationships ?? []).filter(r => r.id !== id) }));
+    mutate(b => ({ ...b, deletedIds: withTombstone(b, id), convergingRelationships: (b.convergingRelationships ?? []).filter(r => r.id !== id) }));
   }, [mutate]);
 
   // Family-unit relationships
   const addFamilyUnitRelationship = useCallback((rel: Omit<FamilyUnitRelationship, 'id'>): FamilyUnitRelationship => {
-    const newRel: FamilyUnitRelationship = { ...rel, id: nanoid() };
+    const newRel: FamilyUnitRelationship = { ...rel, id: nanoid(), updatedAt: new Date().toISOString() };
     mutate(b => ({ ...b, familyUnitRelationships: [...(b.familyUnitRelationships ?? []), newRel] }));
     return newRel;
   }, [mutate]);
 
   const updateFamilyUnitRelationship = useCallback((id: string, updates: Partial<FamilyUnitRelationship>) => {
-    mutate(b => ({ ...b, familyUnitRelationships: (b.familyUnitRelationships ?? []).map(r => r.id === id ? { ...r, ...updates } : r) }));
+    mutate(b => ({ ...b, familyUnitRelationships: (b.familyUnitRelationships ?? []).map(r => r.id === id ? { ...r, ...updates, updatedAt: new Date().toISOString() } : r) }));
   }, [mutate]);
 
   const deleteFamilyUnitRelationship = useCallback((id: string) => {
-    mutate(b => ({ ...b, familyUnitRelationships: (b.familyUnitRelationships ?? []).filter(r => r.id !== id) }));
+    mutate(b => ({ ...b, deletedIds: withTombstone(b, id), familyUnitRelationships: (b.familyUnitRelationships ?? []).filter(r => r.id !== id) }));
   }, [mutate]);
 
   // Group relationships
   const addGroupRelationship = useCallback((rel: Omit<GroupRelationship, 'id'>): GroupRelationship => {
-    const newRel: GroupRelationship = { ...rel, id: nanoid() };
+    const newRel: GroupRelationship = { ...rel, id: nanoid(), updatedAt: new Date().toISOString() };
     mutate(b => ({ ...b, groupRelationships: [...(b.groupRelationships ?? []), newRel] }));
     return newRel;
   }, [mutate]);
 
   const updateGroupRelationship = useCallback((id: string, updates: Partial<GroupRelationship>) => {
-    mutate(b => ({ ...b, groupRelationships: (b.groupRelationships ?? []).map(r => r.id === id ? { ...r, ...updates } : r) }));
+    mutate(b => ({ ...b, groupRelationships: (b.groupRelationships ?? []).map(r => r.id === id ? { ...r, ...updates, updatedAt: new Date().toISOString() } : r) }));
   }, [mutate]);
 
   const deleteGroupRelationship = useCallback((id: string) => {
-    mutate(b => ({ ...b, groupRelationships: (b.groupRelationships ?? []).filter(r => r.id !== id) }));
+    mutate(b => ({ ...b, deletedIds: withTombstone(b, id), groupRelationships: (b.groupRelationships ?? []).filter(r => r.id !== id) }));
   }, [mutate]);
 
   // Canvas annotations
   const addAnnotation = useCallback((annotation: Omit<CanvasAnnotation, 'id'>): CanvasAnnotation => {
-    const newAnnotation: CanvasAnnotation = { ...annotation, id: nanoid() };
+    const newAnnotation: CanvasAnnotation = { ...annotation, id: nanoid(), updatedAt: new Date().toISOString() };
     mutate(b => ({ ...b, annotations: [...(b.annotations ?? []), newAnnotation] }));
     return newAnnotation;
   }, [mutate]);
 
   const updateAnnotation = useCallback((id: string, updates: Partial<CanvasAnnotation>) => {
-    mutate(b => ({ ...b, annotations: (b.annotations ?? []).map(annotation => annotation.id === id ? { ...annotation, ...updates } : annotation) }));
+    mutate(b => ({ ...b, annotations: (b.annotations ?? []).map(annotation => annotation.id === id ? { ...annotation, ...updates, updatedAt: new Date().toISOString() } : annotation) }));
   }, [mutate]);
 
   const deleteAnnotation = useCallback((id: string) => {
-    mutate(b => ({ ...b, annotations: (b.annotations ?? []).filter(annotation => annotation.id !== id) }));
+    mutate(b => ({ ...b, deletedIds: withTombstone(b, id), annotations: (b.annotations ?? []).filter(annotation => annotation.id !== id) }));
   }, [mutate]);
 
   // Groups
   const addGroup = useCallback((group: Omit<Group, 'id'>): Group => {
-    const newGroup: Group = { ...group, id: nanoid() };
+    const newGroup: Group = { ...group, id: nanoid(), updatedAt: new Date().toISOString() };
     mutate(b => ({ ...b, groups: [...b.groups, newGroup] }));
     return newGroup;
   }, [mutate]);
 
   const updateGroup = useCallback((id: string, updates: Partial<Group>) => {
-    mutate(b => ({ ...b, groups: b.groups.map(g => g.id === id ? { ...g, ...updates } : g) }));
+    mutate(b => ({ ...b, groups: b.groups.map(g => g.id === id ? { ...g, ...updates, updatedAt: new Date().toISOString() } : g) }));
   }, [mutate]);
 
   const deleteGroup = useCallback((id: string) => {
     mutate(b => ({
       ...b,
+      deletedIds: withTombstone(b, id),
       groups: b.groups.filter(g => g.id !== id),
       characters: b.characters.map(c => ({
         ...c,
@@ -826,7 +865,7 @@ export function BookProvider({ children }: { children: React.ReactNode }) {
             r => (r.sourceId === a && r.targetId === bId) || (r.sourceId === bId && r.targetId === a)
           );
           if (!exists) {
-            newRels.push({ id: nanoid(), sourceId: a, targetId: bId, type: relType as Relationship['type'], bidirectional, uncertain: false });
+            newRels.push({ id: nanoid(), updatedAt: new Date().toISOString(), sourceId: a, targetId: bId, type: relType as Relationship['type'], bidirectional, uncertain: false });
             created++;
           }
         }
@@ -927,7 +966,7 @@ export function BookProvider({ children }: { children: React.ReactNode }) {
   return (
     <BookContext.Provider value={{
       book, savedBooks,
-      updateBookMeta, saveBook, loadBook, newBook, deleteBook, exportBook, importBook,
+      updateBookMeta, saveBook, loadBook, newBook, deleteBook, exportBook, importBook, findMatchingBook, mergeIntoBook,
       saveLayoutVariant, duplicateLayoutVariant, applyLayoutVariant, renameLayoutVariant, deleteLayoutVariant,
       addCharacter, updateCharacter, deleteCharacter, moveCharacter,
       addRelationship, updateRelationship, deleteRelationship,
