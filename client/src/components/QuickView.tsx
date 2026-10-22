@@ -758,10 +758,18 @@ export function QuickView({ onSwitchToFull }: { onSwitchToFull: () => void }) {
 
   return (
     <div style={{ minHeight: '100dvh', background: C.bg, color: C.text, fontFamily: sans, display: 'flex', flexDirection: 'column' }}>
-      <header style={{ padding: '10px 16px', paddingTop: 'max(10px, env(safe-area-inset-top))', background: C.panel, borderBottom: `1px solid ${C.border}` }}>
-        <button type="button" onClick={() => setTab('book')} style={{ textAlign: 'left', width: '100%' }}>
+      <header style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 16px', paddingTop: 'max(10px, env(safe-area-inset-top))', background: C.panel, borderBottom: `1px solid ${C.border}` }}>
+        <button type="button" onClick={() => setTab('book')} style={{ textAlign: 'left', flex: 1, minWidth: 0 }}>
           <div style={{ fontFamily: serif, fontSize: 20, color: C.text, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{book.title || 'Untitled book'}</div>
-          <div style={{ fontSize: 13, color: C.muted }}>{book.author || 'Tap to set title and author, or switch book'}</div>
+          <div style={{ fontSize: 13, color: C.muted, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{book.author || 'Tap to set title and author, or switch book'}</div>
+        </button>
+        <button
+          type="button"
+          onClick={onSwitchToFull}
+          aria-label="Switch to map view"
+          style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0, padding: '8px 12px', borderRadius: 10, border: `1px solid ${C.gold}80`, color: C.gold, fontSize: 14 }}
+        >
+          <MapIcon size={16} /> Map view
         </button>
       </header>
 
